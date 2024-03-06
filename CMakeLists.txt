@@ -58,12 +58,23 @@ add_custom_target(_version.py
 )
 
 if (WIN32)
-    FetchContent_Declare(cwrsync
-            GIT_REPOSITORY https://github.com/molpro/cwrsync
-            GIT_TAG 6.2.11
+    set(libxxhash_tar libxxhash-0.8.0-1-x86_64.pkg.tar.zst)
+    FetchContent_Declare(libxxhash
+            URL http://repo.msys2.org/msys/x86_64/${libxxhash_tar}
     )
-    FetchContent_MakeAvailable(cwrsync)
-    install(DIRECTORY ${cwrsync_SOURCE_DIR}/ DESTINATION etc/cwrsync PATTERN .git EXCLUDE)
-    file(WRITE rsync "mkdir -p /tmp\ndir=$(dirname \"\${BASH_SOURCE[0]}\")\nexport PATH=\"$dir\"/../etc/cwrsync/bin:\"$dir\"/etc/cwrsync/bin:\"$PATH\"\nexport MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL=\"*\"\nexec rsync.exe --rsh=\"ssh -o UserKnownHostsFile=$HOMEPATH/.ssh/known_hosts -F $HOMEPATH/.ssh/config -i $HOMEPATH/.ssh/id_rsa -i $HOMEPATH/.ssh/id_dsa -i $HOMEPATH/.ssh/id_ed25519 -i $HOMEPATH/.ssh/id_ed25519_sk -i $HOMEPATH/.ssh/id_ecdsa -i $HOMEPATH/.ssh/id_ecdsa_sk\" \"$@\"")
-    install(FILES rsync DESTINATION .)
+    set(rsync_tar rsync-3.2.7-2-x86_64.pkg.tar.zst)
+    FetchContent_Declare(rsync
+            URL http://repo.msys2.org/msys/x86_64/${rsync_tar}
+    )
+    FetchContent_MakeAvailable(libxxhash)
+    FetchContent_MakeAvailable(rsync)
+    foreach (tar ${libxxhash_tar};${rsync_tar})
+        execute_process(
+                COMMAND ${CMAKE_COMMAND} -E tar -I zstd -C ${CMAKE_CURRENT_BINARY_DIR} -xf ${tar}
+        )
+    endforeach ()
+    #    install(DIRECTORY ${cwrsync_SOURCE_DIR}/ DESTINATION etc/cwrsync PATTERN .git EXCLUDE)
+
+    file(WRITE usr/bin/rsync "export MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL=\"*\"\nexec rsync.exe --rsh=\"/usr/bin/ssh -o UserKnownHostsFile=$HOMEPATH/.ssh/known_hosts -F $HOMEPATH/.ssh/config -i $HOMEPATH/.ssh/id_rsa -i $HOMEPATH/.ssh/id_dsa -i $HOMEPATH/.ssh/id_ed25519 -i $HOMEPATH/.ssh/id_ed25519_sk -i $HOMEPATH/.ssh/id_ecdsa -i $HOMEPATH/.ssh/id_ecdsa_sk\" \"$@\"")
+    install(DIRECTORY usr DESTINATION Library)
 endif ()
